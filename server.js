@@ -24,9 +24,10 @@ import todoRoutes from './routes/todoRoutes.js'
 
 const app = express();
 
-// Middleware
+// global level middleware
 app.use(cors()); // cors-> all allowed, specfic port is given
-app.use(express.json());
+app.use(express.json()); // req.body -> undefined if this middleware is not used
+// rate limit middleware ->
 
 // Connect to MongoDB
 connectDB();

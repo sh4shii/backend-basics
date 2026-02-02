@@ -8,42 +8,101 @@ const createTodo = async (req, res) => {
     const { title, description } = req.body;
 
     if (!title) {
-      return res.status(400).json({ message: 'Title is required' });
+      return res.status(400).json({ message: "Title is required" });
     }
 
     const todo = new Todo({
-      userId: req.userId,
+      userId: req.user.userId,
       title,
       description,
     });
 
     await todo.save();
-    res.status(201).json({ message: 'Todo created', todo });
+    res.status(201).json({ message: "Todo created", todo });
   } catch (err) {
-    res.status(500).json({ message: 'Error creating todo', error: err.message });
+    res
+      .status(500)
+      .json({ message: "Error creating todo", error: err.message });
   }
-}
+};
 
 // Get all todos for user
 const getTodos = async (req, res) => {
   try {
-    const todos = await Todo.find({ userId: req.userId }).sort({ createdAt: -1 }); // -1 is descending order
+    const todos = await Todo.find({ userId: req.user.userId }).sort({
+      createdAt: -1,
+    }); // -1 is descending order
     res.json(todos);
   } catch (err) {
-    res.status(500).json({ message: 'Error fetching todos', error: err.message });
+    res
+      .status(500)
+      .json({ message: "Error fetching todos", error: err.message });
   }
 };
 
-const getTodoById = () => {
+// Get single todo
+const getTodoById = async (req, res) => {
+  try {
+    const { todoId } = req.params.id;
+    const todo = await Todo.findOne({ _id: todoId, userId: req.user.userId });
 
-}
+    if (!todo) {
+      return res.status(404).json({ message: "Todo not found" });
+    }
 
-const updateTodo = () => {
+    res.json(todo);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Error fetching todo", error: err.message });
+  }
+};
 
-}
+// Update todo
+const updateTodo = async (req, res) => {
+  try {
+    const { title, description, completed } = req.body;
 
-const deleteTodo = () => {
+    const updatedTodo = await Todo.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user.userId },
+      {
+        title,
+        description,
+        completed,
+      },
+      { new: true },
+    );
 
-}
+    if (!updatedTodo) {
+      return res.status(404).json({ message: "Todo not found" });
+    }
 
-export {createTodo, getTodos, getTodoById, updateTodo, deleteTodo}
+    res.json({ message: "Todo updated", updatedTodo });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Error updating todo", error: err.message });
+  }
+};
+
+// Delete todo
+const deleteTodo = async (req, res) => {
+  try {
+    const todo = await Todo.findOneAndDelete({
+      _id: req.params.id,
+      userId: req.user.userId,
+    });
+
+    if (!todo) {
+      return res.status(404).json({ message: "Todo not found" });
+    }
+
+    res.json({ message: "Todo deleted" });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Error deleting todo", error: err.message });
+  }
+};
+
+export { createTodo, getTodos, getTodoById, updateTodo, deleteTodo };

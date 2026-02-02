@@ -1,15 +1,22 @@
 // main logic for any api
-import User from "../models/UserSchema.js"
+import User from "../models/UserSchema.js";
 import bcrypt from "bcryptjs";
+import { generateToken } from "../util/generateToken.js";
 
 const register = async (req, res) => {
   try {
     // get email and password from frontend (it will be in req object)
     const { email, password } = req.body;
 
+    // above and below both are same
+    // const frontendReq = req.body;
+    // const email = frontendReq.email, password = frontendReq.password
+
     // check if both email and password is coming from frontend
     if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password both are required' });
+      return res
+        .status(400)
+        .json({ message: "Email and password both are required" });
     }
 
     // run basic checks. currently ignore
@@ -20,7 +27,7 @@ const register = async (req, res) => {
     // first check if user exists or not
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
+      return res.status(400).json({ message: "User already exists" });
     }
 
     // now we can create a new user
@@ -45,42 +52,46 @@ const register = async (req, res) => {
     const user = new User({ email, password });
     await user.save();
 
-    // const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    return res.status(201).json({ message: 'User registered successfully' });
+    // now create token to send to frontend
+    const token = generateToken(user);
+    return res
+      .status(201)
+      .json({ message: "User registered successfully", token: token });
   } catch (err) {
-    res.status(500).json({ message: 'Error registering user', error: err.message });
+    res
+      .status(500)
+      .json({ message: "Error registering user", error: err.message });
   }
-}
+};
 
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password both are required' });
+      return res
+        .status(400)
+        .json({ message: "Email and password both are required" });
     }
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const isPasswordMatching = await bcrypt.compare(password, user.password);
     if (!isPasswordMatching) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-
+    const token = generateToken(user);
     res.json({
-      message: 'Login successful',
-      // token,
-      // user: { id: user._id, email: user.email },
+      message: "Login successful",
+      token: token,
     });
   } catch (err) {
-    res.status(500).json({ message: 'Error logging in', error: err.message });
+    res.status(500).json({ message: "Error logging in", error: err.message });
   }
-}
+};
 
-export {register, login};
-
+export { register, login };
