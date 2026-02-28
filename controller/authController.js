@@ -1,7 +1,7 @@
 // main logic for any api
 import User from "../models/UserSchema.js";
 import bcrypt from "bcryptjs";
-import { generateToken } from "../util/generateToken.js";
+import { generateAccessToken, generateRefreshToken } from "../util/generateToken.js";
 
 const register = async (req, res) => {
   try {
@@ -52,11 +52,9 @@ const register = async (req, res) => {
     const user = new User({ email, password });
     await user.save();
 
-    // now create token to send to frontend
-    const token = generateToken(user);
     return res
       .status(201)
-      .json({ message: "User registered successfully", token: token });
+      .json({ message: "User registered successfully" });
   } catch (err) {
     res
       .status(500)
@@ -84,11 +82,23 @@ const login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const token = generateToken(user);
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
+
     res.json({
       message: "Login successful",
-      token: token,
+      token: {
+        accessToken, // to get in fromtend -> data.tooken.accessToken
+        refreshToken // data.tooken.refreshToken
+      },
     });
+
+    // res.json({
+    //   message: "Login successful",
+    //   accessToken, // data.accessToken
+    //   refreshToken // data.refreshToken
+    //   },
+    // });
   } catch (err) {
     res.status(500).json({ message: "Error logging in", error: err.message });
   }

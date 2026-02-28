@@ -1,17 +1,29 @@
 import jwt from "jsonwebtoken";
 
-export const generateToken = (user) => {
+export const generateAccessToken = (user) => {
   // need to remove sensitive info like password, for now we will keep
-  // TODO: need to learn about access token and refresh token
 
   const token = jwt.sign(
-    { userId: user._id, email: user.email },
-    process.env.JWT_SECRET,
+    { userId: user._id, email: user.email }, // payload for jwt token
+    process.env.JWT_ACEESS_SECRET,
     {
-      expiresIn: "7d",
+      expiresIn: "10m",
     },
   );
   return token;
 };
 
-// export {generateToken};
+export const generateRefreshToken = (user) => {
+  // need to remove sensitive info like password, for now we will keep
+
+  const token = jwt.sign(
+    { userId: user._id, email: user.email },
+    process.env.JWT_REFRESH_SECRET,
+    {
+      expiresIn: "30d",
+    },
+  );
+  return token;
+};
+
+// export {generateAccessToken, generateRefreshToken};
