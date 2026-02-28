@@ -7,7 +7,7 @@ export const generateAccessToken = (user) => {
     { userId: user._id, email: user.email }, // payload for jwt token
     process.env.JWT_ACEESS_SECRET,
     {
-      expiresIn: "10m",
+      expiresIn: process.env.JWT_ACCESS_TOKEN_EXPIRY,
     },
   );
   return token;
@@ -20,7 +20,7 @@ export const generateRefreshToken = (user) => {
     { userId: user._id, email: user.email },
     process.env.JWT_REFRESH_SECRET,
     {
-      expiresIn: "30d",
+      expiresIn: process.env.JWT_REFRESH_TOKEN_EXPIRY,
     },
   );
   return token;

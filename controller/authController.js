@@ -1,7 +1,10 @@
 // main logic for any api
 import User from "../models/UserSchema.js";
 import bcrypt from "bcryptjs";
-import { generateAccessToken, generateRefreshToken } from "../util/generateToken.js";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+} from "../util/generateToken.js";
 
 const register = async (req, res) => {
   try {
@@ -52,9 +55,7 @@ const register = async (req, res) => {
     const user = new User({ email, password });
     await user.save();
 
-    return res
-      .status(201)
-      .json({ message: "User registered successfully" });
+    return res.status(201).json({ message: "User registered successfully" });
   } catch (err) {
     res
       .status(500)
@@ -85,13 +86,25 @@ const login = async (req, res) => {
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
 
+    // Set the refresh token as an HttpOnly cookie
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true, // Prevents JavaScript from reading the cookie
+      sameSite: "Strict", // CSRF protection
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+    });
+
     res.json({
       message: "Login successful",
-      token: {
-        accessToken, // to get in fromtend -> data.tooken.accessToken
-        refreshToken // data.tooken.refreshToken
-      },
+      token: accessToken,
     });
+
+    // res.json({
+    //   message: "Login successful",
+    //   token: {
+    //     accessToken, // to get in fromtend -> data.tooken.accessToken
+    //     refreshToken // data.tooken.refreshToken
+    //   },
+    // });
 
     // res.json({
     //   message: "Login successful",
@@ -104,4 +117,27 @@ const login = async (req, res) => {
   }
 };
 
-export { register, login };
+const refresh = async (req, res) => {
+  // get refreshToken
+  const refreshToken = req.cookies.refreshToken;
+
+  // check if it is valid, generate a new access token
+  try {
+    jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+
+    const user = await User.findOne({ email });
+    const newAccessToken = generateAccessToken(user);
+
+    return res
+      .status(200)
+      .json({ message: "New access token generated", token: newAccessToken });
+  } catch (err) {
+    if (err.name === "TokenExpiredError") {
+      return res
+        .status(401)
+        .json({ message: "Refresh token expired, Please login again" });
+    }
+    return res.status(403).json({ message: "Unexpected error occured" });
+  }
+};
+export { register, login, refresh };
